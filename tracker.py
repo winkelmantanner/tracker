@@ -43,7 +43,7 @@ def SendRepository ( RootFolder , client_address ) :
             Size = os.path.getsize(FilePath)
             with open(FilePath, 'r') as content_file:
                 content = content_file.read()
-            Buffer = Buffer + '[' + root + '] file ' + Size + ' ' + Contents + '\n'
+            Buffer = Buffer + '[' + FilePath + '] file ' + Size + ' ' + Contents + '\n'
             print ( Buffer )
     
 
