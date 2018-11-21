@@ -3,6 +3,7 @@
 # Message Receiver
 import os
 import sys
+import file_tree_loader
 from socket import *
 
 
@@ -58,6 +59,12 @@ def RetrieveRemoteRepository ( Folder , RemoteAddress ) :
     UDPSock.close()
     os._exit(0)
 
+def diff_compute(args):
+    if len(args) == 2:
+        if args[0] == 'unsaved' and args[1] == 'changes':
+            file_tree_loader.main()
+
+
 def MainSwitch ( ) :
     if len ( sys.argv ) > 1 :
         if sys.argv [ 1 ] == 'CreateRepo' :
@@ -66,5 +73,7 @@ def MainSwitch ( ) :
             HostRepositories ( )
         if sys.argv [ 1 ] == 'Retrieve' :
             RetrieveRemoteRepository ( sys.argv [ 2 ] , sys.argv [ 3 ] )
+        if sys.argv [ 1 ] == 'show':
+            diff_compute(sys.argv[2:])
 
 MainSwitch ( )

@@ -13,6 +13,7 @@ def file_type_to_str(file_type_object):
     return str(file_type_object, encoding='utf-8')
 FILE_OBJECT_TYPE = type(eval(BYTES_CHAR + "''"))
 DELIM = eval(BYTES_CHAR + "\'\\n\'")
+STR_DELIM = file_type_to_str(DELIM)
 
 def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
     """
@@ -27,6 +28,17 @@ def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
     linesa = [file_type_to_str(line + DELIM) for line in file_object_a.split(DELIM)]
     linesb = [file_type_to_str(line + DELIM) for line in file_object_b.split(DELIM)]
     return ''.join(difflib.context_diff(linesa, linesb, fromfile=from_file_name, tofile=to_file_name))
+
+def safe_context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
+    try:
+        return context_diff(file_object_a, file_object_b, from_file_name, to_file_name)
+    except UnicodeDecodeError:
+        if from_file_name != '' and to_file_name != '':
+            return STR_DELIM + "Binary file " + from_file_name + " differs" + STR_DELIM + STR_DELIM
+        elif from_file_name != '':
+            return STR_DELIM + "Binary file " + from_file_name + " was deleted" + STR_DELIM + STR_DELIM
+        elif to_file_name != '':
+            return STR_DELIM + "Binary file " + to_file_name + " was created" + STR_DELIM + STR_DELIM
 
 
 
@@ -76,30 +88,49 @@ def generate_diff_of_relevant_trees(a_relevant_tree, b_relevant_tree, path=''):
         path_with_key = key
         if path != '':
             path_with_key = path + str(os.sep) + key
-        try:
-            if key in a_relevant_tree and key in b_relevant_tree:
-                if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE and type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
-                    yield context_diff(a_relevant_tree[key], b_relevant_tree[key], path_with_key, path_with_key)
-                elif type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:  # b_relevant_tree[key] is a directory
-                    yield context_diff(a_relevant_tree[key], str_to_file_type(""), path_with_key, "")
-                    yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
-                elif type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:  # a_relevant_tree[key] is a directory
-                    yield context_diff(str_to_file_type(""), b_relevant_tree[key], "", path_with_key)
-                    yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}, path_with_key))
-                else:
-                    yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], b_relevant_tree[key], path_with_key))
-            elif key in a_relevant_tree:
-                if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:
-                    yield context_diff(a_relevant_tree[key], str_to_file_type(""), path_with_key, "")
-                else:
-                    yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}, path_with_key))
-            elif key in b_relevant_tree:
-                if type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
-                    yield context_diff(str_to_file_type(""), b_relevant_tree[key], "", path_with_key)
-                else:
-                    yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
-        except UnicodeDecodeError:
-            yield file_type_to_str(DELIM) + 'Binary file ' + path_with_key + ' differs' + file_type_to_str(DELIM)
+        if key in a_relevant_tree and key in b_relevant_tree:
+            if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE and type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
+                yield safe_context_diff(a_relevant_tree[key], b_relevant_tree[key], path_with_key, path_with_key)
+            elif type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:  # b_relevant_tree[key] is a directory
+                yield safe_context_diff(a_relevant_tree[key], str_to_file_type(""), path_with_key, "")
+                yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
+            elif type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:  # a_relevant_tree[key] is a directory
+                yield safe_context_diff(str_to_file_type(""), b_relevant_tree[key], "", path_with_key)
+                yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}, path_with_key))
+            else:
+                yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], b_relevant_tree[key], path_with_key))
+        elif key in a_relevant_tree:
+            if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:
+                yield safe_context_diff(a_relevant_tree[key], str_to_file_type(""), path_with_key, "")
+            else:
+                yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}, path_with_key))
+        elif key in b_relevant_tree:
+            if type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
+                yield safe_context_diff(str_to_file_type(""), b_relevant_tree[key], "", path_with_key)
+            else:
+                yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
+
+
+
+def compute_function_between_dicts(dict1, dict2, func):
+    result = {}
+    for key in set(dict1.keys()).union(set(dict2.keys())):
+        if key in dict1 and key in dict2:
+            if dict1[key] != dict2[key]:
+                result[key] = func(dict1[key], dict2[key], key, key)
+        elif key in dict1:
+            result[key] = func(dict1[key], "", key, "")
+        elif key in dict2:
+            result[key] = func("", dict2[key], "", key)
+    return result
+
+def compute_context_diffs_between_dicts(dict1, dict2):
+    return compute_function_between_dicts(dict1, dict2, safe_context_diff)
+
+def generate_context_diffs_between_dicts(dict1, dict2):
+    diff_dict = compute_context_diffs_between_dicts(dict1, dict2)
+    for key in diff_dict:
+        yield diff_dict[key]
 
 
 def compute_dmp_diff(string1, string2):
@@ -124,6 +155,6 @@ def apply_changes_dmp(destination, source, base):
 if __name__=='__main__':
     dest = 'qwerqwerqwer'
     source = 'qaerqaer'
-    base = 'qwerqwer'
+    base = '8r9fmqcoqruxhr8qchpo'
     result = apply_changes_dmp(dest, source, base)
     print(result)
