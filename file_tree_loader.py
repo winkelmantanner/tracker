@@ -25,16 +25,17 @@ def load_one_file(tree, path_string_to_containing_folder, file_name):
 
 
 def load_tree(root):
-    tree_a = dict()
-    for line in sys.stdin:
-        tree_b = dict()
-        for path_string, dir_list, file_list in os.walk(root):
-            for file_name in file_list:
-                load_one_file(tree_b, path_string, file_name)
-        left_diff_tree, right_diff_tree = diff_trees(tree_a, tree_b)
-        print(left_diff_tree, right_diff_tree)
-        tree_a = tree_b
+    tree = {}
+    for path_string, dir_list, file_list in os.walk(root):
+        for file_name in file_list:
+            load_one_file(tree, path_string, file_name)
+    return tree
 
 
 if __name__=='__main__':
-    load_tree('.')
+    tree_a = load_tree('.')
+    for line in sys.stdin:
+        tree_b = load_tree('.')
+        left_diff_tree, right_diff_tree = diff_trees(tree_a, tree_b)
+        print(left_diff_tree, right_diff_tree)
+        tree_a = tree_b
