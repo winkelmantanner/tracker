@@ -32,7 +32,7 @@ def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
 def safe_context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
     try:
         return context_diff(file_object_a, file_object_b, from_file_name, to_file_name)
-    except UnicodeDecodeError:
+    except Exception:
         if from_file_name != '' and to_file_name != '':
             return STR_DELIM + "Binary file " + from_file_name + " differs" + STR_DELIM + STR_DELIM
         elif from_file_name != '':
