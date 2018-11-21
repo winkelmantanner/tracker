@@ -33,9 +33,10 @@ def load_tree(root):
 
 
 if __name__=='__main__':
-    tree_a = load_tree('.')
+    root = '.'
+    tree_a = load_tree(root)
     for line in sys.stdin:
-        tree_b = load_tree('.')
+        tree_b = load_tree(root)
         left_diff_tree, right_diff_tree = relevant_subtrees(tree_a, tree_b)
         print(''.join(generate_diff_of_relevant_trees(left_diff_tree, right_diff_tree)))
         tree_a = tree_b
