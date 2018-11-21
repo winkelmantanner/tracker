@@ -9,13 +9,26 @@ def diff(texta, textb, from_file_name, to_file_name):
     return ''.join(difflib.context_diff(linesa, linesb, fromfile=from_file_name, tofile=to_file_name))
 
 
-def diff_trees(tree_a, tree_b):
+
+def relevant_subtrees(tree_a, tree_b):
+    """
+    This function will return a subset of tree_a and a subset of tree_b, each containing only items that differ
+
+    :param tree_a:
+        The first filesystem tree.
+    :param tree_b:
+        The second filesystem tree.
+
+    :return:
+        Two trees.
+        A subset of tree_a and a subset of tree_b, each containing only items that differ
+    """
     a_relevant_objects_tree = {}
     b_relevant_objects_tree = {}
     for key in set(tree_a.keys()).union(set(tree_b.keys())):
         if key in tree_a and key in tree_b:
             if type(tree_a[key]) == type(dict()) and type(tree_b[key]) == type(dict()):
-                child_a_relevant_objects_tree, child_b_relevant_objects_tree = diff_trees(tree_a[key], tree_b[key])
+                child_a_relevant_objects_tree, child_b_relevant_objects_tree = relevant_subtrees(tree_a[key], tree_b[key])
                 if child_a_relevant_objects_tree != {}:
                     a_relevant_objects_tree[key] = child_a_relevant_objects_tree
                 if child_b_relevant_objects_tree != {}:
