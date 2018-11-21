@@ -1,3 +1,4 @@
+import os
 
 import difflib
 
@@ -10,7 +11,7 @@ def str_to_file_type(string):
 def file_type_to_str(file_type_object):
     return str(file_type_object, encoding='utf-8')
 FILE_OBJECT_TYPE = type(eval(BYTES_CHAR + "''"))
-DELIM = eval(BYTES_CHAR + "'\\n'")
+DELIM = eval(BYTES_CHAR + "\'\\n\'")
 
 def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
     """
@@ -69,15 +70,29 @@ def relevant_subtrees(tree_a, tree_b):
 
 
 
-def generate_diff_of_relevant_trees(a_relevant_tree, b_relevant_tree):
+def generate_diff_of_relevant_trees(a_relevant_tree, b_relevant_tree, path=''):
     for key in set(a_relevant_tree.keys()).union(set(b_relevant_tree.keys())):
-        if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE and type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
-            yield context_diff(a_relevant_tree[key], b_relevant_tree[key], key, key)
-        elif type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:  # b_relevant_tree[key] is a directory
-            yield context_diff(a_relevant_tree[key], "", key, "")
-            yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key]))
-        elif type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:  # a_relevant_tree[key] is a directory
-            yield context_diff("", b_relevant_tree[key], "", key)
-            yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}))
-        else:
-            yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], b_relevant_tree[key]))
+        path_with_key = key
+        if path != '':
+            path_with_key = path + str(os.sep) + key
+        if key in a_relevant_tree and key in b_relevant_tree:
+            if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE and type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
+                yield context_diff(a_relevant_tree[key], b_relevant_tree[key], path_with_key, path_with_key)
+            elif type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:  # b_relevant_tree[key] is a directory
+                yield context_diff(a_relevant_tree[key], str_to_file_type(""), path_with_key, "")
+                yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
+            elif type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:  # a_relevant_tree[key] is a directory
+                yield context_diff(str_to_file_type(""), b_relevant_tree[key], "", path_with_key)
+                yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}, path_with_key))
+            else:
+                yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], b_relevant_tree[key], path_with_key))
+        elif key in a_relevant_tree:
+            if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:
+                yield context_diff(a_relevant_tree[key], str_to_file_type(""), path_with_key, "")
+            else:
+                yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}, path_with_key))
+        elif key in b_relevant_tree:
+            if type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
+                yield context_diff(str_to_file_type(""), b_relevant_tree[key], "", path_with_key)
+            else:
+                yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
