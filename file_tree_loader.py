@@ -2,10 +2,10 @@ import os
 import sys
 import base64
 
-from diff import relevant_subtrees
+from diff import generate_diff_of_relevant_trees, relevant_subtrees, BYTES_CHAR
 
 def load_file_contents(path_string):
-    with open(path_string, 'rb') as bytes_generator:
+    with open(path_string, 'r' + BYTES_CHAR) as bytes_generator:
         file_bytes = bytes_generator.read()
     return file_bytes
 
@@ -37,5 +37,5 @@ if __name__=='__main__':
     for line in sys.stdin:
         tree_b = load_tree('.')
         left_diff_tree, right_diff_tree = relevant_subtrees(tree_a, tree_b)
-        print(left_diff_tree, right_diff_tree)
+        print(''.join(generate_diff_of_relevant_trees(left_diff_tree, right_diff_tree)))
         tree_a = tree_b

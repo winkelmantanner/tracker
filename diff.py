@@ -1,11 +1,29 @@
 
 import difflib
 
-DELIM = '\n'
 
-def diff(texta, textb, from_file_name, to_file_name):
-    linesa = [line + DELIM for line in texta.split('\n')]
-    linesb = [line + DELIM for line in textb.split('\n')]
+
+# ensure that all relevant places are changed if we change the fact that content is stored as bytes
+BYTES_CHAR = 'b'
+def str_to_file_type(string):
+    return bytes(string, encoding='utf-8')
+def file_type_to_str(file_type_object):
+    return str(file_type_object, encoding='utf-8')
+FILE_OBJECT_TYPE = type(eval(BYTES_CHAR + "''"))
+DELIM = eval(BYTES_CHAR + "'\\n'")
+
+def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
+    """
+
+    :param texta:
+    :param textb:
+    :param from_file_name:
+    :param to_file_name:
+    :return:
+        A string (type str) of diff
+    """
+    linesa = [file_type_to_str(line + DELIM) for line in file_object_a.split(DELIM)]
+    linesb = [file_type_to_str(line + DELIM) for line in file_object_b.split(DELIM)]
     return ''.join(difflib.context_diff(linesa, linesb, fromfile=from_file_name, tofile=to_file_name))
 
 
@@ -48,3 +66,18 @@ def relevant_subtrees(tree_a, tree_b):
         elif key in tree_b:
             b_relevant_objects_tree[key] = tree_b[key]
     return a_relevant_objects_tree, b_relevant_objects_tree
+
+
+
+def generate_diff_of_relevant_trees(a_relevant_tree, b_relevant_tree):
+    for key in set(a_relevant_tree.keys()).union(set(b_relevant_tree.keys())):
+        if type(a_relevant_tree[key]) == FILE_OBJECT_TYPE and type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:
+            yield context_diff(a_relevant_tree[key], b_relevant_tree[key], key, key)
+        elif type(a_relevant_tree[key]) == FILE_OBJECT_TYPE:  # b_relevant_tree[key] is a directory
+            yield context_diff(a_relevant_tree[key], "", key, "")
+            yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key]))
+        elif type(b_relevant_tree[key]) == FILE_OBJECT_TYPE:  # a_relevant_tree[key] is a directory
+            yield context_diff("", b_relevant_tree[key], "", key)
+            yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], {}))
+        else:
+            yield ''.join(generate_diff_of_relevant_trees(a_relevant_tree[key], b_relevant_tree[key]))
