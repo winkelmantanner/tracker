@@ -1,7 +1,8 @@
 import os
 
 import difflib
-
+import diff_match_patch as dmp_module
+dmp = dmp_module.diff_match_patch()
 
 
 # ensure that all relevant places are changed if we change the fact that content is stored as bytes
@@ -99,3 +100,30 @@ def generate_diff_of_relevant_trees(a_relevant_tree, b_relevant_tree, path=''):
                     yield ''.join(generate_diff_of_relevant_trees({}, b_relevant_tree[key], path_with_key))
         except UnicodeDecodeError:
             yield file_type_to_str(DELIM) + 'Binary file ' + path_with_key + ' differs' + file_type_to_str(DELIM)
+
+
+def compute_dmp_diff(string1, string2):
+    return dmp.diff_main(string1, string2)
+
+def compute_dmp_patch_from_diff(string, diff):
+    return dmp.patch_make(string, diff)
+
+def compute_dmp_patch_from_strings(string1, string2):
+    return dmp.patch_make(string1, string2)
+
+def apply_dmp_patch(dmp_patch, string):
+    return dmp.patch_apply(dmp_patch, string)
+
+def apply_dmp_diff(string, diff):
+    dmp_patch = compute_dmp_patch_from_diff(string, diff)
+    return apply_dmp_patch(dmp_patch, string)
+
+def apply_changes_dmp(destination, source, base):
+    return apply_dmp_diff(destination, compute_dmp_diff(base, source))
+
+if __name__=='__main__':
+    dest = 'qwerqwerqwer'
+    source = 'qaerqaer'
+    base = 'qwerqwer'
+    result = apply_changes_dmp(dest, source, base)
+    print(result)
