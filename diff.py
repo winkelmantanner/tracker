@@ -143,11 +143,17 @@ def compute_function_between_dicts(dict1, dict2, func):
     for key in set(dict1.keys()).union(set(dict2.keys())):
         if key in dict1 and key in dict2:
             if dict1[key] != dict2[key]:
-                result[key] = func(dict1[key], dict2[key], key, key)
+                r = func(dict1[key], dict2[key], key, key)
+                if r != None:
+                    result[key] = r
         elif key in dict1:
-            result[key] = func(dict1[key], '', key, "")
+            r = func(dict1[key], '', key, "")
+            if r != None:
+                result[key] = r
         elif key in dict2:
-            result[key] = func('', dict2[key], "", key)
+            r = func('', dict2[key], "", key)
+            if r != None:
+                result[key] = r
     return result
 
 def compute_context_diffs_between_dicts(dict1, dict2):
@@ -163,9 +169,13 @@ def compute_dmp_patch_between_file_objects(file1, file2, *args):
     try:
         string1 = file_type_to_str(file1)
         string2 = file_type_to_str(file2)
-        return compute_dmp_patch_from_strings(string1, string2)
+        patch = compute_dmp_patch_from_strings(string1, string2)
+        if patch != []:
+            return patch
+        else:
+            return None
     except Exception:
-        return compute_dmp_patch_from_strings("", "")
+        return None
 
 def compute_dmp_patch_dict(dict1, dict2):
     return compute_function_between_dicts(dict1, dict2, compute_dmp_patch_between_file_objects)
