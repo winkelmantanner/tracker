@@ -1,5 +1,5 @@
 import os
-
+import traceback
 import difflib
 import diff_match_patch as dmp_module
 dmp = dmp_module.diff_match_patch()
@@ -14,25 +14,42 @@ def file_type_to_str(file_type_object):
 FILE_OBJECT_TYPE = type(eval(BYTES_CHAR + "''"))
 DELIM = eval(BYTES_CHAR + "\'\\n\'")
 STR_DELIM = file_type_to_str(DELIM)
+EMPTY_FILE = b''
 
 def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
     """
+    DO NOT CALL.  CALL safe_context_diff INSTEAD.
 
-    :param texta:
-    :param textb:
+    :param file_object_a:
+        MUST BE TYPE BYTES
+    :param file_object_b:
+        MUST BE TYPE BYTES
     :param from_file_name:
+        MUST BE TYPE STR
     :param to_file_name:
+        MUST BE TYPE STR
     :return:
         A string (type str) of diff
     """
-    linesa = [file_type_to_str(line + DELIM) for line in file_object_a.split(DELIM)]
-    linesb = [file_type_to_str(line + DELIM) for line in file_object_b.split(DELIM)]
+    splittext_a = file_type_to_str(file_object_a).split(STR_DELIM)
+    splittext_b = file_type_to_str(file_object_b).split(STR_DELIM)
+    linesa = [line + STR_DELIM for line in splittext_a]
+    linesb = [line + STR_DELIM for line in splittext_b]
     return ''.join(difflib.context_diff(linesa, linesb, fromfile=from_file_name, tofile=to_file_name))
 
 def safe_context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
+
+    # make sure only the right types are passed
+    file_a = file_object_a
+    if type(file_object_a) != type(EMPTY_FILE):
+        file_a = bytes(file_object_a, encoding='utf-8')
+    file_b = file_object_b
+    if type(file_object_b) != type(EMPTY_FILE):
+        file_b = bytes(file_object_b, encoding='utf-8')
+
     try:
-        return context_diff(file_object_a, file_object_b, from_file_name, to_file_name)
-    except Exception:
+        return context_diff(file_a, file_b, from_file_name, to_file_name)
+    except Exception as e:
         if from_file_name != '' and to_file_name != '':
             return STR_DELIM + "Binary file " + from_file_name + " differs" + STR_DELIM + STR_DELIM
         elif from_file_name != '':
@@ -119,9 +136,9 @@ def compute_function_between_dicts(dict1, dict2, func):
             if dict1[key] != dict2[key]:
                 result[key] = func(dict1[key], dict2[key], key, key)
         elif key in dict1:
-            result[key] = func(dict1[key], "", key, "")
+            result[key] = func(dict1[key], '', key, "")
         elif key in dict2:
-            result[key] = func("", dict2[key], "", key)
+            result[key] = func('', dict2[key], "", key)
     return result
 
 def compute_context_diffs_between_dicts(dict1, dict2):
