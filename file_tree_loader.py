@@ -63,7 +63,7 @@ def current_context_diff():
 
 def compute_file_system_state_from_history(state_name):
     previous_state_name, patch_dict = tracker.read_previous_state_name_and_patch_data_from_file(state_name)
-    print("compute_file_system_state_from_history was called;  PREVIOUS STATE:" + str(previous_state_name) + " PATCH_DICT:" + str(patch_dict))
+    # print("compute_file_system_state_from_history was called;  PREVIOUS STATE:" + str(previous_state_name) + " PATCH_DICT:" + str(patch_dict))
     if previous_state_name == None:
         return diff.apply_dmp_patch_dict({}, patch_dict)
     else:
@@ -80,13 +80,13 @@ def save(new_state_name):
         return "state " + new_state_name + " already exists"
     except Exception:
         saved_filesystem_state = compute_file_system_state_from_history(old_state_name)
-        print("TANNER COMPUTED STATE FROM HISTORY:")
-        print(saved_filesystem_state)
-        print("TANNER CURRENT FILESYSTEM STATE:")
-        print(current_filesystem_state)
+        # print("TANNER COMPUTED STATE FROM HISTORY:")
+        # print(saved_filesystem_state)
+        # print("TANNER CURRENT FILESYSTEM STATE:")
+        # print(current_filesystem_state)
         patch_dict = diff.compute_dmp_patch_dict(saved_filesystem_state, current_filesystem_state)
-        print("TANNER COMPUTED PATCH DICT:")
-        print(patch_dict)
+        # print("TANNER COMPUTED PATCH DICT:")
+        # print(patch_dict)
         tracker.write_patch_data_for_state(new_state_name, old_state_name, patch_dict)
         tracker.set_current_state_name(new_state_name)
         return ''
