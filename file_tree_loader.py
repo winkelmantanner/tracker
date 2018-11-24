@@ -1,7 +1,10 @@
 import os
 import sys
 import base64
+import re
+import tracker
 
+import diff
 from diff import generate_diff_of_relevant_trees, generate_context_diffs_between_dicts, relevant_subtrees, BYTES_CHAR
 
 def load_file_contents(path_string):
@@ -31,8 +34,10 @@ def load_one_file_path_into_dict(dictionary, path_string_to_containing_folder, f
 
 def generate_files_location_and_name(root):
     for path_string, dir_list, file_list in os.walk(root):
-        for file_name in file_list:
-            yield path_string, file_name
+        # ignore trackerfiles
+        if not re.match('^\.?' + os.sep + '?' + tracker.TRACKER_FOLDER_NAME, path_string):
+            for file_name in file_list:
+                yield path_string, file_name
 
 def load_dict(root):
     dictionary = dict()
@@ -49,8 +54,44 @@ def load_tree(root):
 
 
 
+def current_context_diff():
+    current_state_name = tracker.get_current_state_name()
+    current_file_system_state = load_dict(tracker.get_trackerfiles_parent_path_or_empty_string())
+    saved_file_system_state = compute_file_system_state_from_history(current_state_name)
+    return ''.join(generate_context_diffs_between_dicts(saved_file_system_state, current_file_system_state))
+
+
+def compute_file_system_state_from_history(state_name):
+    previous_state_name, patch_dict = tracker.read_previous_state_name_and_patch_data_from_file(state_name)
+    print("compute_file_system_state_from_history was called;  PREVIOUS STATE:" + str(previous_state_name) + " PATCH_DICT:" + str(patch_dict))
+    if previous_state_name == None:
+        return diff.apply_dmp_patch_dict({}, patch_dict)
+    else:
+        if previous_state_name == state_name:
+            raise Exception("Perpetual recursion prevented: state " + state_name + " had itself listed as its predecessor.")
+        return diff.apply_dmp_patch_dict(compute_file_system_state_from_history(previous_state_name), patch_dict)
+
 def save(new_state_name):
-    filesystem_state = load_dict('.')
+
+    current_filesystem_state = load_dict(tracker.get_trackerfiles_parent_path_or_empty_string())
+    old_state_name = tracker.get_current_state_name()
+    try:
+        tracker.read_previous_state_name_and_patch_data_from_file(new_state_name)
+        return "state " + new_state_name + " already exists"
+    except Exception:
+        saved_filesystem_state = compute_file_system_state_from_history(old_state_name)
+        print("TANNER COMPUTED STATE FROM HISTORY:")
+        print(saved_filesystem_state)
+        print("TANNER CURRENT FILESYSTEM STATE:")
+        print(current_filesystem_state)
+        patch_dict = diff.compute_dmp_patch_dict(saved_filesystem_state, current_filesystem_state)
+        print("TANNER COMPUTED PATCH DICT:")
+        print(patch_dict)
+        tracker.write_patch_data_for_state(new_state_name, old_state_name, patch_dict)
+        tracker.set_current_state_name(new_state_name)
+        return ''
+
+
 
 
 

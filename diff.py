@@ -13,12 +13,12 @@ DELIM = eval(BYTES_CHAR + "\'\\n\'")
 
 def str_to_file_type(string):
     if type(string) == type(''):
-        return bytes(string)
+        return bytes(string, encoding='utf-8')
     else:
         return string
 def file_type_to_str(file_type_object):
     if type(file_type_object) == type(EMPTY_FILE):
-        return str(file_type_object)
+        return str(file_type_object, encoding='utf-8')
     else:
         return file_type_object
 
@@ -51,10 +51,10 @@ def safe_context_diff(file_object_a, file_object_b, from_file_name, to_file_name
     # make sure only the right types are passed
     file_a = file_object_a
     if type(file_object_a) != type(EMPTY_FILE):
-        file_a = bytes(file_object_a, encoding='utf-8')
+        file_a = str_to_file_type(file_object_a)
     file_b = file_object_b
     if type(file_object_b) != type(EMPTY_FILE):
-        file_b = bytes(file_object_b, encoding='utf-8')
+        file_b = str_to_file_type(file_object_b)
 
     try:
         return context_diff(file_a, file_b, from_file_name, to_file_name)
@@ -160,12 +160,21 @@ def generate_context_diffs_between_dicts(dict1, dict2):
 
 
 def compute_dmp_patch_between_file_objects(file1, file2, *args):
-    string1 = file_type_to_str(file1)
-    string2 = file_type_to_str(file2)
-    return compute_dmp_patch_from_strings(string1, string2)
+    try:
+        string1 = file_type_to_str(file1)
+        string2 = file_type_to_str(file2)
+        return compute_dmp_patch_from_strings(string1, string2)
+    except Exception:
+        return compute_dmp_patch_from_strings("", "")
 
 def compute_dmp_patch_dict(dict1, dict2):
     return compute_function_between_dicts(dict1, dict2, compute_dmp_patch_between_file_objects)
+
+def apply_dmp_patch_with_star_args(dmp_patch, string, *args):
+    return apply_dmp_patch(dmp_patch, string)
+
+def apply_dmp_patch_dict(destination_dict, patch_dict):
+    return compute_function_between_dicts(patch_dict, destination_dict, apply_dmp_patch_with_star_args)
 
 
 def compute_dmp_diff(string1, string2):
@@ -178,7 +187,7 @@ def compute_dmp_patch_from_strings(string1, string2):
     return dmp.patch_make(string1, string2)
 
 def apply_dmp_patch(dmp_patch, string):
-    return dmp.patch_apply(dmp_patch, string)
+    return dmp.patch_apply(dmp_patch, string)[0]
 
 def apply_dmp_diff(string, diff):
     dmp_patch = compute_dmp_patch_from_diff(string, diff)

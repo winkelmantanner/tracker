@@ -1455,7 +1455,7 @@ class diff_match_patch:
       text1 = a
       diffs = c
     else:
-      raise ValueError("Unknown call format to patch_make.")
+      raise ValueError("Unknown call format to patch_make.  Types: a:" + str(type(a)) + " b:" + str(type(b)))
 
     if not diffs:
       return []  # Get rid of the None case.
