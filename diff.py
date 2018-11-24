@@ -199,6 +199,6 @@ def apply_changes_dmp(destination, source, base):
 if __name__=='__main__':
     dest = 'qwerqwerqwer'
     source = 'qaerqaer'
-    base = '8r9fmqcoqruxhr8qchpo'
+    base = 'asdfqwer'
     result = apply_changes_dmp(dest, source, base)
     print(result)
