@@ -3,6 +3,7 @@
 # Message Receiver
 import os
 import sys
+import traceback
 import file_tree_loader
 from diff import compute_dmp_patch_dict
 import pickle
@@ -14,25 +15,35 @@ CURRENT_STATE_POINTER_NAME = 'currentState'
 INITIAL_STATE_NAME = "INITIAL"
 STATES_FOLDER_NAME = 'states'
 
-def write_patch_data_to_file(state_name, patch_dict, python_writable_file):
-    o = {'name': state_name, 'patch_dict': patch_dict}
-    pickle.dump(o, python_writable_file)
+def write_patch_data_for_state(state_name, previous_state_name, patch_dict):
+    o = {'previous_state_name': previous_state_name, 'patch_dict': patch_dict}
+    with open(os.path.join(get_states_folder_path(), state_name), 'wb') as state_file:
+        pickle.dump(o, state_file)
 
-# def read_patch_data_from_file(python_readable_file):
-#     file_data = json.loads(python_readable_file.read())
-#     return file_data.patch_dict
+def read_previous_state_name_and_patch_data_from_file(state_name):
+    with open(os.path.join(get_states_folder_path(), state_name), 'rb') as state_file:
+        file_data = pickle.load(state_file)
+    return file_data['previous_state_name'], file_data['patch_dict']
 
+def get_current_state_name():
+    current_state = ''
+    with open(os.path.join(get_trackerfiles_path_or_empty_string(), CURRENT_STATE_POINTER_NAME), 'r') as currentStateFileIterable:
+        current_state = currentStateFileIterable.read()
+    return current_state.strip()
+
+def set_current_state_name(new_current_state_name):
+    with open(os.path.join(get_trackerfiles_path_or_empty_string(), CURRENT_STATE_POINTER_NAME), 'w') as currentStatePythonFile:
+        currentStatePythonFile.write(new_current_state_name)
 
 def create_basic_trackerfiles(trackerfiles_path, initial_patch_dict):
     with open(os.path.join(trackerfiles_path, CURRENT_STATE_POINTER_NAME), 'w') as file:
         file.write(INITIAL_STATE_NAME)
     os.mkdir(os.path.join(trackerfiles_path, STATES_FOLDER_NAME))
-    with open(os.path.join(trackerfiles_path, STATES_FOLDER_NAME, INITIAL_STATE_NAME), 'wb') as initial_state_file:
-        write_patch_data_to_file(INITIAL_STATE_NAME, initial_patch_dict, initial_state_file)
+    write_patch_data_for_state(INITIAL_STATE_NAME, None, initial_patch_dict)
 
 
 def CreateRepository ( Folder ) :
-    patch_dict = compute_dmp_patch_dict({}, file_tree_loader.load_dict(os.path.abspath('.')))
+    patch_dict = compute_dmp_patch_dict({}, file_tree_loader.load_dict(Folder))
     if not os.path.exists(Folder):
         os . mkdir ( Folder )
     if os.path.exists(os.path.join(Folder, TRACKER_FOLDER_NAME)):
@@ -93,36 +104,46 @@ def RetrieveRemoteRepository ( Folder , RemoteAddress ) :
     UDPSock.close()
     os._exit(0)
 
-def diff_compute(args):
-    if len(args) == 2:
-        if args[0] == 'unsaved' and args[1] == 'changes':
-            file_tree_loader.main()
+def handle_show(args):
+    print(file_tree_loader.current_context_diff())
 
 def handle_save():
-    if len(sys.argv) < 3:
+    if len(sys.argv) != 3:
         print("Syntax: tracker save [name of new tracker saved state]")
         return
     state_name = sys.argv[2]
     result = file_tree_loader.save(state_name)
-    if result != '':
+    if result != None and result != '':
         print("Failed to save because " + result)
+    else:
+        print("Successful")
 
 def get_current_abs_path():
     return os.path.abspath('.')
 
-def get_trackerfiles_path_or_empty_string():
+def get_trackerfiles_parent_path_or_empty_string():
     try:
-        trackerfiles_path = get_current_abs_path()
+        trackerfiles_path = '.'
         prevdirs = set()
         while not os.path.exists(TRACKER_FOLDER_NAME):
             os.chdir('..')
             trackerfiles_path = get_current_abs_path()
-            print(trackerfiles_path)
             if get_current_abs_path() in prevdirs:
                 raise Exception("Reached root directory and did not find trackerfiles.  Not a tracker repository.")
             prevdirs.add(get_current_abs_path())
-        return os.path.join(trackerfiles_path, TRACKER_FOLDER_NAME)
+        return trackerfiles_path
     except Exception:
+        return ''
+
+def get_trackerfiles_path_or_empty_string():
+    parent_path = get_trackerfiles_parent_path_or_empty_string()
+    return os.path.join(parent_path, TRACKER_FOLDER_NAME)
+
+def get_states_folder_path():
+    trackerfiles_path = get_trackerfiles_path_or_empty_string()
+    if trackerfiles_path != '':
+        return os.path.join(trackerfiles_path, STATES_FOLDER_NAME)
+    else:
         return ''
 
 def get_current_state_name_or_none():
@@ -143,7 +164,7 @@ def MainSwitch ( ) :
         if sys.argv [ 1 ] == 'Retrieve' :
             RetrieveRemoteRepository ( sys.argv [ 2 ] , sys.argv [ 3 ] )
         if sys.argv [ 1 ] == 'show':
-            diff_compute(sys.argv[2:])
+            handle_show(sys.argv[2:])
         if sys.argv[1] == 'save':
             handle_save()
 
