@@ -156,6 +156,11 @@ def get_current_state_name_or_none():
             current_state_name = currentStateFile.read().strip()
     return current_state_name
 
+def printHelp():
+    print("Tracker - an easier to use program similar to git")
+    print('tracker CreateRepo [folder]')
+    print('tracker show')
+    print('tracker save [name]')
 
 def MainSwitch ( ) :
     if len ( sys.argv ) > 1 :
@@ -170,10 +175,9 @@ def MainSwitch ( ) :
         elif sys.argv[1] == 'save':
             handle_save()
         else:
-            print("Tracker - an easier to use program similar to git")
-            print('tracker CreateRepo [folder]')
-            print('tracker show')
-            print('tracker save [name]')
+            printHelp()
+    else:
+        printHelp()
 
 if __name__=='__main__':
     MainSwitch ( )
