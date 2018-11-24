@@ -6,9 +6,17 @@ import sys
 import file_tree_loader
 from socket import *
 
+TRACKER_FOLDER_NAME = 'trackerfiles'
+
 
 def CreateRepository ( Folder ) :
-    os . mkdir ( Folder )
+    if not os.path.exists(Folder):
+        os . mkdir ( Folder )
+    if os.path.exists(os.path.join(Folder, TRACKER_FOLDER_NAME)):
+        print(Folder + " is already a tracker repository")
+    else:
+        os.mkdir(os.path.join(Folder, TRACKER_FOLDER_NAME))
+        print("Repository " + Folder + " initialized successfully")
 
 def HostRepositories ( ) :
     host = ""
