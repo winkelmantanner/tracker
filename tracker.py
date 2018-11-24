@@ -159,14 +159,19 @@ def MainSwitch ( ) :
     if len ( sys.argv ) > 1 :
         if sys.argv [ 1 ] == 'CreateRepo' :
             CreateRepository ( sys.argv [ 2 ] )
-        if sys.argv [ 1 ] == 'Host' :
+        elif sys.argv [ 1 ] == 'Host' :
             HostRepositories ( )
-        if sys.argv [ 1 ] == 'Retrieve' :
+        elif sys.argv [ 1 ] == 'Retrieve' :
             RetrieveRemoteRepository ( sys.argv [ 2 ] , sys.argv [ 3 ] )
-        if sys.argv [ 1 ] == 'show':
+        elif sys.argv [ 1 ] == 'show':
             handle_show(sys.argv[2:])
-        if sys.argv[1] == 'save':
+        elif sys.argv[1] == 'save':
             handle_save()
+        else:
+            print("Tracker - an easier to use program similar to git")
+            print('tracker CreateRepo [folder]')
+            print('tracker show')
+            print('tracker save [name]')
 
 if __name__=='__main__':
     MainSwitch ( )
