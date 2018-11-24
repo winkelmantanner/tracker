@@ -48,6 +48,12 @@ def load_tree(root):
     return tree
 
 
+
+def save(new_state_name):
+    filesystem_state = load_dict('.')
+
+
+
 def main():
     root = '.'
     tree_a = load_dict(root)

@@ -7,14 +7,23 @@ dmp = dmp_module.diff_match_patch()
 
 # ensure that all relevant places are changed if we change the fact that content is stored as bytes
 BYTES_CHAR = 'b'
-def str_to_file_type(string):
-    return bytes(string, encoding='utf-8')
-def file_type_to_str(file_type_object):
-    return str(file_type_object, encoding='utf-8')
+EMPTY_FILE = b''
 FILE_OBJECT_TYPE = type(eval(BYTES_CHAR + "''"))
 DELIM = eval(BYTES_CHAR + "\'\\n\'")
+
+def str_to_file_type(string):
+    if type(string) == type(''):
+        return bytes(string)
+    else:
+        return string
+def file_type_to_str(file_type_object):
+    if type(file_type_object) == type(EMPTY_FILE):
+        return str(file_type_object)
+    else:
+        return file_type_object
+
 STR_DELIM = file_type_to_str(DELIM)
-EMPTY_FILE = b''
+
 
 def context_diff(file_object_a, file_object_b, from_file_name, to_file_name):
     """
@@ -148,6 +157,15 @@ def generate_context_diffs_between_dicts(dict1, dict2):
     diff_dict = compute_context_diffs_between_dicts(dict1, dict2)
     for key in diff_dict:
         yield diff_dict[key]
+
+
+def compute_dmp_patch_between_file_objects(file1, file2, *args):
+    string1 = file_type_to_str(file1)
+    string2 = file_type_to_str(file2)
+    return compute_dmp_patch_from_strings(string1, string2)
+
+def compute_dmp_patch_dict(dict1, dict2):
+    return compute_function_between_dicts(dict1, dict2, compute_dmp_patch_between_file_objects)
 
 
 def compute_dmp_diff(string1, string2):
