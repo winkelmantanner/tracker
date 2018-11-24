@@ -16,8 +16,11 @@ INITIAL_STATE_NAME = "INITIAL"
 STATES_FOLDER_NAME = 'states'
 
 def write_patch_data_for_state(state_name, previous_state_name, patch_dict):
+    write_state(state_name, previous_state_name, patch_dict, get_states_folder_path())
+
+def write_state(state_name, previous_state_name, patch_dict, state_path):
     o = {'previous_state_name': previous_state_name, 'patch_dict': patch_dict}
-    with open(os.path.join(get_states_folder_path(), state_name), 'wb') as state_file:
+    with open(os.path.join(state_path, state_name), 'wb') as state_file:
         pickle.dump(o, state_file)
 
 def read_previous_state_name_and_patch_data_from_file(state_name):
@@ -35,23 +38,22 @@ def set_current_state_name(new_current_state_name):
     with open(os.path.join(get_trackerfiles_path_or_empty_string(), CURRENT_STATE_POINTER_NAME), 'w') as currentStatePythonFile:
         currentStatePythonFile.write(new_current_state_name)
 
-def create_basic_trackerfiles(trackerfiles_path, initial_patch_dict):
-    with open(os.path.join(trackerfiles_path, CURRENT_STATE_POINTER_NAME), 'w') as file:
-        file.write(INITIAL_STATE_NAME)
-    os.mkdir(os.path.join(trackerfiles_path, STATES_FOLDER_NAME))
-    write_patch_data_for_state(INITIAL_STATE_NAME, None, initial_patch_dict)
-
 
 def CreateRepository ( Folder ) :
     patch_dict = compute_dmp_patch_dict({}, file_tree_loader.load_dict(Folder))
     if not os.path.exists(Folder):
         os . mkdir ( Folder )
-    if os.path.exists(os.path.join(Folder, TRACKER_FOLDER_NAME)):
+    os.chdir(Folder) # CHANGE DIRECTORY
+    if os.path.exists(os.path.join(TRACKER_FOLDER_NAME)):
         print(Folder + " is already a tracker repository")
     else:
-        trackerfiles_path = os.path.join(Folder, TRACKER_FOLDER_NAME)
-        os.mkdir(trackerfiles_path)
-        create_basic_trackerfiles(trackerfiles_path, patch_dict)
+        # now we are at the root of the repo
+        print(os.getcwd())
+        os.mkdir(TRACKER_FOLDER_NAME)
+        with open(os.path.join(TRACKER_FOLDER_NAME, CURRENT_STATE_POINTER_NAME), 'w') as file:
+            file.write(INITIAL_STATE_NAME)
+        os.mkdir(os.path.join(TRACKER_FOLDER_NAME, STATES_FOLDER_NAME))
+        write_patch_data_for_state(INITIAL_STATE_NAME, None, patch_dict)
         print("Repository " + Folder + " initialized successfully")
 
 
