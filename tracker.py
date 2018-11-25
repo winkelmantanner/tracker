@@ -5,6 +5,7 @@ import os
 import sys
 import traceback
 import file_tree_loader
+import diff
 from diff import compute_dmp_patch_dict
 import pickle
 from socket import *
@@ -107,6 +108,7 @@ def RetrieveRemoteRepository ( Folder , RemoteAddress ) :
     os._exit(0)
 
 def handle_show(args):
+    print("Diff from saved state " + str(get_current_state_name()))
     print(file_tree_loader.current_context_diff())
 
 def handle_save():
@@ -119,6 +121,72 @@ def handle_save():
         print("Failed to save because " + result)
     else:
         print("Successful")
+
+def handle_move():
+    if len(sys.argv) != 3:
+        print("Syntax: tracker move [name previously saved state]")
+        return
+    # do not move if there are unsaved changes
+    current_context_diff = ''
+    try:
+        current_context_diff = file_tree_loader.current_context_diff().strip()
+        if current_context_diff.strip() != '':
+            print("Failed to move because there are unsaved changes.  You can see them with 'tracker show'."
+                  "  Use 'tracker save [saved state name]' to save them before moving.")
+            return
+    except Exception as e:
+        print("error while computing diff: " + str(e))
+        print("attempting move anyway")
+    requested_state_name = sys.argv[2]
+    dict_at_requested_state = {}
+    try:
+        dict_at_requested_state = file_tree_loader.compute_file_system_state_from_history(requested_state_name)
+    except IOError:
+        print("Failed because unable to find state " + requested_state_name)
+        return
+    try:
+        # first, delete all files in current state
+        # then, create all files in destination state
+        current_state_name = get_current_state_name()
+        dict_at_current_state = file_tree_loader.compute_file_system_state_from_history(current_state_name)
+        for file_path in dict_at_current_state:
+            if os.path.isfile(file_path):
+                # delete the file
+                os.remove(file_path)
+
+                # delete empty containing folders
+                if file_path[0] != '.':
+                    raise Exception("prevented deleting non-relative path " + str(file_path))
+                iterating_path = file_path
+                count = 0
+                while iterating_path.find(os.sep) >= 0 and count < 5000:
+                    iterating_path, file_name = os.path.split(iterating_path)
+                    if os.listdir(iterating_path) == []:
+                        os.rmdir(iterating_path)
+                if count >= 5000:
+                    raise Exception("Infinite loop broken when processing path " + str(file_path))
+
+        for file_path in dict_at_requested_state:
+            containing_folder_path, file_name = os.path.split(file_path)
+            my_makedirs(containing_folder_path)
+            with open(file_path, 'wb') as file:
+                file.write(diff.str_to_file_type(dict_at_requested_state[file_path]))
+
+        set_current_state_name(requested_state_name)
+
+        print("Successfully set current state to " + str(requested_state_name) + " and made working directory match")
+    except Exception as e:
+        traceback.print_exc()
+        print("EXCEPTION:" + str(e))
+
+def my_makedirs(path):
+    if path.find(os.sep) < 0:
+        return
+    parent_path, child_name = os.path.split(path)
+    my_makedirs(parent_path)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 
 def get_current_abs_path():
     return os.path.abspath('.')
@@ -174,6 +242,8 @@ def MainSwitch ( ) :
             handle_show(sys.argv[2:])
         elif sys.argv[1] == 'save':
             handle_save()
+        elif sys.argv[1] == 'move':
+            handle_move()
         else:
             printHelp()
     else:
