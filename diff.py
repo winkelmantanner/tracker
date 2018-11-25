@@ -175,7 +175,7 @@ def compute_dmp_patch_between_file_objects(file1, file2, *args):
         else:
             return None
     except Exception:
-        return None
+        return (file1, file2, )  # the , denontes a tuple
 
 def compute_dmp_patch_dict(dict1, dict2):
     return compute_function_between_dicts(dict1, dict2, compute_dmp_patch_between_file_objects)
@@ -190,14 +190,19 @@ def apply_dmp_patch_dict(destination_dict, patch_dict):
 def compute_dmp_diff(string1, string2):
     return dmp.diff_main(string1, string2)
 
-def compute_dmp_patch_from_diff(string, diff):
-    return dmp.patch_make(string, diff)
-
 def compute_dmp_patch_from_strings(string1, string2):
     return dmp.patch_make(string1, string2)
 
 def apply_dmp_patch(dmp_patch, string):
+    if type(dmp_patch) == type(tuple()):
+        return dmp_patch[1]
     return dmp.patch_apply(dmp_patch, string)[0]
+
+
+
+# Only used in driver below
+def compute_dmp_patch_from_diff(string, diff):
+    return dmp.patch_make(string, diff)
 
 def apply_dmp_diff(string, diff):
     dmp_patch = compute_dmp_patch_from_diff(string, diff)
