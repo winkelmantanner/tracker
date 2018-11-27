@@ -190,6 +190,9 @@ def apply_dmp_patch_dict(destination_dict, patch_dict):
 def compute_dmp_diff(string1, string2):
     return dmp.diff_main(string1, string2)
 
+def compute_dmp_diff_dict(dict1, dict2):
+    return compute_function_between_dicts(dict1, dict2, lambda a, b, *args : compute_dmp_diff(a, b))
+
 def compute_dmp_patch_from_strings(string1, string2):
     return dmp.patch_make(string1, string2)
 
@@ -199,10 +202,18 @@ def apply_dmp_patch(dmp_patch, string):
     return dmp.patch_apply(dmp_patch, string)[0]
 
 
-
-# Only used in driver below
 def compute_dmp_patch_from_diff(string, diff):
     return dmp.patch_make(string, diff)
+
+def compute_dmp_patch_dict_from_dmp_diff_dict(dest_dict, diff_dict):
+    patch_dict = {}
+    for key in set(dest_dict.keys()).union(diff_dict.keys()):
+        if key in dest_dict and key in diff_dict:
+            patch_dict[key] = compute_dmp_patch_from_diff(dest_dict[key], diff_dict[key])
+        elif key in diff_dict:
+            patch_dict[key] = compute_dmp_patch_from_diff("", diff_dict[key])
+    return patch_dict
+
 
 def apply_dmp_diff(string, diff):
     dmp_patch = compute_dmp_patch_from_diff(string, diff)
