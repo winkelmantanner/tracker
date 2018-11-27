@@ -108,8 +108,12 @@ def RetrieveRemoteRepository ( Folder , RemoteAddress ) :
     os._exit(0)
 
 def handle_show(args):
-    print("Diff from saved state " + str(get_current_state_name()))
-    print(file_tree_loader.current_context_diff())
+    print("Showing changes from saved state " + str(get_current_state_name()))
+    context_diff = file_tree_loader.current_context_diff()
+    if context_diff.strip() == '':
+        print('No changes detected')
+    else:
+        print(file_tree_loader.current_context_diff())
 
 def handle_save():
     if len(sys.argv) != 3:
