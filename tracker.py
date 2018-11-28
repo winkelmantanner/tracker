@@ -8,13 +8,17 @@ import file_tree_loader
 import diff
 from diff import compute_dmp_patch_dict
 import pickle
+import server
 from socket import *
+import requests
 
 
 TRACKER_FOLDER_NAME = 'trackerfiles'
 CURRENT_STATE_POINTER_NAME = 'currentState'
 INITIAL_STATE_NAME = "INITIAL"
 STATES_FOLDER_NAME = 'states'
+
+SERVER_URL = 'http://127.0.0.1:8000'
 
 def write_patch_data_for_state(state_name, previous_state_name, patch_dict):
     write_state(state_name, previous_state_name, patch_dict, get_states_folder_path())
@@ -250,13 +254,24 @@ def handle_upload():
         print("The remote state will be equivalent to the local state given by [state name].")
         return
     data_dict = file_tree_loader.compute_file_system_state_from_history(local_state_name)
-    sock = get_client_sock()
-    host = ''
-    port = 13000
-    addr = (host, port)
-    data = {'state_name' : remote_state_name, 'data_dict' : data_dict}
-    sock.sendto(pickle.dumps(data), addr)
-    print("Sent")
+    response = requests.post(SERVER_URL, data=pickle.dumps({
+        server.STATE_NAME_KEY: remote_state_name,
+        server.FILE_DICT_KEY: data_dict,
+    }))
+    # sock = get_client_sock()
+    # host = ''
+    # port = 13000
+    # addr = (host, port)
+    # data = {'state_name' : remote_state_name, 'data_dict' : data_dict}
+    # sock.sendto(pickle.dumps(data), addr)
+    result_string = str(response.content, encoding='utf-8')
+    if result_string != '':
+        print("Failed.  Server says: " + str(response.content, encoding='utf-8'))
+    elif response.status_code != 200:
+        print("Server responded with status code " + str(response.status_code) + ", which is not the expected value 200."
+            "  However, server did not return an explanation")
+    else:
+        print("Server responded with success")
 
 
 
