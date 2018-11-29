@@ -29,7 +29,7 @@ urlpatterns = [
 
 if __name__ == '__main__':
     settings.configure(
-        DEBUG=False,
+        DEBUG=True,
         ROOT_URLCONF=sys.modules[__name__],
     )
     execute_from_command_line(sys.argv + ['runserver'])
