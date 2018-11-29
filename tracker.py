@@ -58,52 +58,26 @@ def CreateRepository ( Folder ) :
         print("Repository " + Folder + " initialized successfully")
 
 
-class ServerCommand:
-    UPLOAD = b'u'
-    DOWNLOAD = b'd'
-
-def get_client_sock():
-    host = ""
-    port = 13000
-    addr = (host, port)
-    UDPSock = socket(AF_INET, SOCK_DGRAM)
-    UDPSock.bind(addr)
-    return UDPSock
-
-def get_host_sock():
-    host = ""
-    port = 13000
-    addr = (host, port)
-    UDPSock = socket(AF_INET, SOCK_DGRAM)
-    UDPSock.bind(addr)
-    return UDPSock
-
 def HostRepositories ( ) :
+    host = ""
+    port = 13000
     buf = 1024
-    sock = get_host_sock()
+    addr = (host, port)
+    UDPSock = socket(AF_INET, SOCK_DGRAM)
+    UDPSock.bind(addr)
     print("Waiting to receive messages...")
     while True:
-        (data, client_address) = sock.recvfrom(buf)
-        if data[0] == ServerCommand.UPLOAD:
-            python_data = pickle.loads(data[1:])
-            new_state_name = python_data['new_state_name']
-            previous_state_name = python_data['previous_state_name']
-            data_dict = python_data['data_dict']
-            result = file_tree_loader.save_dict(new_state_name, data_dict)
-            print(result)
-        # elif data[0] == ServerCommand.DOWNLOAD:
-
-
-        # Message = data.decode()
-        # print("Received message: " + Message)
-        # DataArray = Message . split ( )
-        # print(DataArray)
-        # if data == "exit":
-        #     break
-        # if DataArray [ 0 ] == 'Copy':
-        #     print('FOUND Copy')
-        # if DataArray [ 0 ] == 'Retrieve':
-        #     SendRepository ( DataArray [ 1 ] , client_address )
+        (data, client_address) = UDPSock.recvfrom(buf)
+        Message = data.decode()
+        print("Received message: " + Message)
+        DataArray = Message . split ( )
+        print(DataArray)
+        if data == "exit":
+            break
+        if DataArray [ 0 ] == 'Copy':
+            print('FOUND Copy')
+        if DataArray [ 0 ] == 'Retrieve':
+            SendRepository ( DataArray [ 1 ] , client_address )
     UDPSock.close()
     os._exit(0)
 
@@ -230,33 +204,7 @@ def handle_apply():
         print("Applied changes successfully")
 
 
-def handle_upload():
-    local_state_name = ''
-    remote_state_name = ''
-    if len(sys.argv) == 5:
-        if sys.argv[3] != 'as':
-            print("Syntax: tracker upload [state name] as [name on server]")
-            return
-        local_state_name = sys.argv[2]
-        remote_state_name = sys.argv[4]
-    elif len(sys.argv) == 3:
-        local_state_name = sys.argv[2]
-        remote_state_name = sys.argv[2]
-    else:
-        print("Syntax: tracker upload [state name] (as [name on server])?")
-        print("Creates a state on the server.")
-        print("The remote state will be called [name on server] if provided.")
-        print("Otherwise it will be called [state name].")
-        print("The remote state will be equivalent to the local state given by [state name].")
-        return
-    data_dict = file_tree_loader.compute_file_system_state_from_history(local_state_name)
-    sock = get_client_sock()
-    host = ''
-    port = 13000
-    addr = (host, port)
-    data = {'state_name' : remote_state_name, 'data_dict' : data_dict}
-    sock.sendto(pickle.dumps(data), addr)
-    print("Sent")
+
 
 
 
@@ -321,8 +269,6 @@ def MainSwitch ( ) :
             handle_move()
         elif sys.argv[1] == 'apply':
             handle_apply()
-        elif sys.argv[1] == 'upload':
-            handle_upload()
         else:
             printHelp()
     else:
