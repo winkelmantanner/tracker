@@ -65,10 +65,6 @@ def CreateRepository ( Folder ) :
         print("Repository " + Folder + " initialized successfully")
 
 
-class ServerCommand:
-    UPLOAD = b'u'
-    DOWNLOAD = b'd'
-
 def get_client_sock():
     host = ""
     port = 13000
@@ -102,7 +98,6 @@ def HostRepositories ( ) :
                     zip_ref.extractall(os.getcwd())
                 os.remove('tmp.zip')
                 print ( 'Received' , len ( python_data[server.FILE_DICT_KEY] ) , 'bytes' )
-                # elif data[0] == ServerCommand.DOWNLOAD:
 
 
                 # Message = data.decode()
