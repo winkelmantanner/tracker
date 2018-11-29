@@ -249,6 +249,12 @@ def handle_move():
 
 def my_makedirs(path):
     if path.find(os.sep) < 0:
+        return
+    parent_path, child_name = os.path.split(path)
+    my_makedirs(parent_path)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 def handle_apply():
     if len(sys.argv) != 7 or sys.argv[2] != 'changes' or sys.argv[3] != 'from' or sys.argv[5] != 'to':
         print("Syntax: tracker apply changes from [state 1] to [state 2]")
