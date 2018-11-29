@@ -217,10 +217,28 @@ def handle_move():
         # then, create all files in destination state
         current_state_name = get_current_state_name()
         dict_at_current_state = file_tree_loader.compute_file_system_state_from_history(current_state_name)
+        for file_path in dict_at_current_state:
+            if os.path.isfile(file_path):
+                # delete the file
+                os.remove(file_path)
 
-        file_tree_loader.delete_files_in_dict(dict_at_current_state)
+                # delete empty containing folders
+                if file_path[0] != '.':
+                    raise Exception("prevented deleting non-relative path " + str(file_path))
+                iterating_path = file_path
+                count = 0
+                while iterating_path.find(os.sep) >= 0 and count < 5000:
+                    iterating_path, file_name = os.path.split(iterating_path)
+                    if os.listdir(iterating_path) == []:
+                        os.rmdir(iterating_path)
+                if count >= 5000:
+                    raise Exception("Infinite loop broken when processing path " + str(file_path))
 
-        file_tree_loader.create_files_in_dict(dict_at_requested_state)
+        for file_path in dict_at_requested_state:
+            containing_folder_path, file_name = os.path.split(file_path)
+            my_makedirs(containing_folder_path)
+            with open(file_path, 'wb') as file:
+                file.write(diff.str_to_file_type(dict_at_requested_state[file_path]))
 
         set_current_state_name(requested_state_name)
 
@@ -229,6 +247,8 @@ def handle_move():
         traceback.print_exc()
         print("EXCEPTION:" + str(e))
 
+def my_makedirs(path):
+    if path.find(os.sep) < 0:
 def handle_apply():
     if len(sys.argv) != 7 or sys.argv[2] != 'changes' or sys.argv[3] != 'from' or sys.argv[5] != 'to':
         print("Syntax: tracker apply changes from [state 1] to [state 2]")
@@ -274,6 +294,11 @@ def handle_upload(RemoteRepo , IPAddress):
     if len(sys.argv) != 4:
         print("Syntax: tracker upload [repo name] [ip addr]")
         return
+    parent_path, child_name = os.path.split(path)
+    my_makedirs(parent_path)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
     fantasy_zip = zipfile.ZipFile('tmp.zip', 'w')
     for folder, subfolders, files in os.walk(os.getcwd()):
         for file in files:
@@ -293,7 +318,7 @@ def handle_upload(RemoteRepo , IPAddress):
         server.FILE_DICT_KEY: fileContent,
     })
 
-    
+
     port = int(13000)
     addr = (IPAddress, port)
     UDPSock = socket(AF_INET, SOCK_DGRAM)
@@ -319,7 +344,7 @@ def handle_download(RemoteRepo , IPAddress):
     UDPSock = socket(AF_INET, SOCK_DGRAM)
     UDPSock.sendto(data, addr)
     print ( 'Download request sent' )
-    
+
     buf = 99999
     UDPSock2 = socket(AF_INET, SOCK_DGRAM)
     addr2 = (IPAddress, 8000)
@@ -336,7 +361,7 @@ def handle_download(RemoteRepo , IPAddress):
                 zip_ref.extractall(os.getcwd())
             os.remove('tmp.zip')
             print ( 'Received' , len ( python_data[server.FILE_DICT_KEY] ) , ' bytes' )
-    
+
 
 def get_current_abs_path():
     return os.path.abspath('.')

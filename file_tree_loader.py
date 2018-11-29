@@ -71,68 +71,28 @@ def compute_file_system_state_from_history(state_name):
             raise Exception("Perpetual recursion prevented: state " + state_name + " had itself listed as its predecessor.")
         return diff.apply_dmp_patch_dict(compute_file_system_state_from_history(previous_state_name), patch_dict)
 
-def save_dict(state_name, file_dict):
+def save(new_state_name):
+
+    current_filesystem_state = load_dict(tracker.get_trackerfiles_parent_path_or_empty_string())
     old_state_name = tracker.get_current_state_name()
     try:
-        tracker.read_previous_state_name_and_patch_data_from_file(state_name)
-        return "state " + state_name + " already exists"
+        tracker.read_previous_state_name_and_patch_data_from_file(new_state_name)
+        return "state " + new_state_name + " already exists"
     except Exception:
         saved_filesystem_state = compute_file_system_state_from_history(old_state_name)
         # print("TANNER COMPUTED STATE FROM HISTORY:")
         # print(saved_filesystem_state)
         # print("TANNER CURRENT FILESYSTEM STATE:")
         # print(current_filesystem_state)
-        patch_dict = diff.compute_dmp_patch_dict(saved_filesystem_state, file_dict)
+        patch_dict = diff.compute_dmp_patch_dict(saved_filesystem_state, current_filesystem_state)
         # print("TANNER COMPUTED PATCH DICT:")
         # print(patch_dict)
-        tracker.write_patch_data_for_state(state_name, old_state_name, patch_dict)
-        tracker.set_current_state_name(state_name)
+        tracker.write_patch_data_for_state(new_state_name, old_state_name, patch_dict)
+        tracker.set_current_state_name(new_state_name)
         return ''
 
 
-def save(new_state_name):
-    current_filesystem_state = load_dict(tracker.get_trackerfiles_parent_path_or_empty_string())
-    return save_dict(new_state_name, current_filesystem_state)
 
-
-
-def delete_files_in_dict(file_dict):
-    """
-    raises Exceptions
-    :param file_dict:
-    :return:
-    """
-    for file_path in file_dict:
-        if os.path.isfile(file_path):
-            # delete the file
-            os.remove(file_path)
-
-            # delete empty containing folders
-            if file_path[0] != '.':
-                raise Exception("prevented deleting non-relative path " + str(file_path))
-            iterating_path = file_path
-            count = 0
-            while iterating_path.find(os.sep) >= 0 and count < 5000:
-                iterating_path, file_name = os.path.split(iterating_path)
-                if os.listdir(iterating_path) == []:
-                    os.rmdir(iterating_path)
-            if count >= 5000:
-                raise Exception("Infinite loop prevented when processing path " + str(file_path))
-
-def create_files_in_dict(file_dict):
-    for file_path in file_dict:
-        containing_folder_path, file_name = os.path.split(file_path)
-        my_makedirs(containing_folder_path)
-        with open(file_path, 'wb') as file:
-            file.write(diff.str_to_file_type(file_dict[file_path]))
-
-def my_makedirs(path):
-    if path.find(os.sep) < 0:
-        return
-    parent_path, child_name = os.path.split(path)
-    my_makedirs(parent_path)
-    if not os.path.exists(path):
-        os.mkdir(path)
 
 
 def main():
