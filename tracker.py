@@ -11,6 +11,9 @@ import pickle
 import server
 from socket import *
 import requests
+import shutil
+import zipfile
+import tarfile
 
 
 TRACKER_FOLDER_NAME = 'trackerfiles'
@@ -83,18 +86,18 @@ def get_host_sock():
     return UDPSock
 
 def HostRepositories ( ) :
-    buf = 1024
+    buf = 99999
     sock = get_host_sock()
     print("Waiting to receive messages...")
     while True:
         (data, client_address) = sock.recvfrom(buf)
-        if data[0] == ServerCommand.UPLOAD:
-            python_data = pickle.loads(data[1:])
-            new_state_name = python_data['new_state_name']
-            previous_state_name = python_data['previous_state_name']
-            data_dict = python_data['data_dict']
-            result = file_tree_loader.save_dict(new_state_name, data_dict)
-            print(result)
+        f = open('tmp.zip', 'wb')
+        f.write(data)
+        f.close()
+        zip = zipfile.ZipFile('tmp.zip')
+        with zipfile.ZipFile('tmp.zip', 'r') as zip_ref:
+            zip_ref.extractall(os.getcwd())
+        os.remove('tmp.zip')
         # elif data[0] == ServerCommand.DOWNLOAD:
 
 
@@ -234,44 +237,34 @@ def handle_apply():
         print("Applied changes successfully")
 
 
-def handle_upload():
-    local_state_name = ''
+def handle_upload(RemoteRepo , IPAddress , Port):
+    local_state_name = 's4'
     remote_state_name = ''
-    if len(sys.argv) == 5:
-        if sys.argv[3] != 'as':
-            print("Syntax: tracker upload [state name] as [name on server]")
-            return
-        local_state_name = sys.argv[2]
-        remote_state_name = sys.argv[4]
-    elif len(sys.argv) == 3:
-        local_state_name = sys.argv[2]
-        remote_state_name = sys.argv[2]
-    else:
-        print("Syntax: tracker upload [state name] (as [name on server])?")
-        print("Creates a state on the server.")
-        print("The remote state will be called [name on server] if provided.")
-        print("Otherwise it will be called [state name].")
-        print("The remote state will be equivalent to the local state given by [state name].")
+    if len(sys.argv) != 5:
+        print("Syntax: tracker upload [repo name] [ip addr] [port]")
         return
     data_dict = file_tree_loader.compute_file_system_state_from_history(local_state_name)
-    response = requests.post(SERVER_URL, data=pickle.dumps({
-        server.STATE_NAME_KEY: remote_state_name,
-        server.FILE_DICT_KEY: data_dict,
-    }))
+    fantasy_zip = zipfile.ZipFile('tmp.zip', 'w')
+    for folder, subfolders, files in os.walk(os.getcwd()):
+        for file in files:
+            fantasy_zip.write(os.path.join(folder, file), os.path.relpath(os.path.join(folder,file)), compress_type = zipfile.ZIP_DEFLATED)
+    fantasy_zip.close()
+    fileContent = ''
+    zip = zipfile.ZipFile('tmp.zip')
+    with open('tmp.zip', mode='rb') as file:
+        fileContent = file.read()
+    #f = open('tmp2.zip', 'wb')
+    #f.write(fileContent)
     # sock = get_client_sock()
     # host = ''
-    # port = 13000
-    # addr = (host, port)
+    port = int(Port)
+    addr = (IPAddress, port)
+    UDPSock = socket(AF_INET, SOCK_DGRAM)
+    print('fileContent = ' , fileContent)
+    UDPSock.sendto(fileContent, addr)
+    os.remove('tmp.zip')
     # data = {'state_name' : remote_state_name, 'data_dict' : data_dict}
     # sock.sendto(pickle.dumps(data), addr)
-    result_string = str(response.content, encoding='utf-8')
-    if result_string != '':
-        print("Failed.  Server says: " + str(response.content, encoding='utf-8'))
-    elif response.status_code != 200:
-        print("Server responded with status code " + str(response.status_code) + ", which is not the expected value 200."
-            "  However, server did not return an explanation")
-    else:
-        print("Server responded with success")
 
 
 
@@ -337,7 +330,7 @@ def MainSwitch ( ) :
         elif sys.argv[1] == 'apply':
             handle_apply()
         elif sys.argv[1] == 'upload':
-            handle_upload()
+            handle_upload(sys.argv[2], sys.argv[3], sys.argv[4])
         else:
             printHelp()
     else:
