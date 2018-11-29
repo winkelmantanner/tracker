@@ -212,8 +212,8 @@ def apply_changes_dmp(destination, source, base):
     return apply_dmp_diff(destination, compute_dmp_diff(base, source))
 
 if __name__=='__main__':
-    dest = 'qwerqwerqwer'
-    source = 'qaerqaer'
-    base = 'asdfqwer'
+    base = 'qwer'
+    dest = 'zwer'
+    source = 'qaer'
     result = apply_changes_dmp(dest, source, base)
     print(result)
