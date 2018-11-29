@@ -353,7 +353,7 @@ def handle_download(RemoteRepo , IPAddress):
 
     buf = 99999
     UDPSock2 = socket(AF_INET, SOCK_DGRAM)
-    addr2 = (IPAddress, 8000)
+    addr2 = ('127.0.0.1', 8000)
     UDPSock2.bind(addr2)
     (data, client_address) = UDPSock2.recvfrom(buf)
     python_data = pickle.loads(data)
