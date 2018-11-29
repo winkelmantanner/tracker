@@ -91,27 +91,58 @@ def HostRepositories ( ) :
     print("Waiting to receive messages...")
     while True:
         (data, client_address) = sock.recvfrom(buf)
-        f = open('tmp.zip', 'wb')
-        f.write(data)
-        f.close()
-        zip = zipfile.ZipFile('tmp.zip')
-        with zipfile.ZipFile('tmp.zip', 'r') as zip_ref:
-            zip_ref.extractall(os.getcwd())
-        os.remove('tmp.zip')
-        # elif data[0] == ServerCommand.DOWNLOAD:
+        python_data = pickle.loads(data)
+        if python_data[server.REMOTE_REPO_KEY] == os.path.basename(os.getcwd()) :
+            if python_data[server.OPERATION_KEY] == server.UPLOAD:
+                f = open('tmp.zip', 'wb')
+                f.write(python_data[server.FILE_DICT_KEY])
+                f.close()
+                zip = zipfile.ZipFile('tmp.zip')
+                with zipfile.ZipFile('tmp.zip', 'r') as zip_ref:
+                    zip_ref.extractall(os.getcwd())
+                os.remove('tmp.zip')
+                print ( 'Received' , len ( python_data[server.FILE_DICT_KEY] ) , 'bytes' )
+                # elif data[0] == ServerCommand.DOWNLOAD:
 
 
-        # Message = data.decode()
-        # print("Received message: " + Message)
-        # DataArray = Message . split ( )
-        # print(DataArray)
-        # if data == "exit":
-        #     break
-        # if DataArray [ 0 ] == 'Copy':
-        #     print('FOUND Copy')
-        # if DataArray [ 0 ] == 'Retrieve':
-        #     SendRepository ( DataArray [ 1 ] , client_address )
-    UDPSock.close()
+                # Message = data.decode()
+                # print("Received message: " + Message)
+                # DataArray = Message . split ( )
+                # print(DataArray)
+                # if data == "exit":
+                #     break
+                # if DataArray [ 0 ] == 'Copy':
+                #     print('FOUND Copy')
+                # if DataArray [ 0 ] == 'Retrieve':
+                #     SendRepository ( DataArray [ 1 ] , client_address )
+            elif python_data[server.OPERATION_KEY] == server.DOWNLOAD:
+                print('Received download request')
+                fantasy_zip = zipfile.ZipFile('tmp.zip', 'w')
+                for folder, subfolders, files in os.walk(os.getcwd()):
+                    for file in files:
+                        fantasy_zip.write(os.path.join(folder, file), os.path.relpath(os.path.join(folder,file)), compress_type = zipfile.ZIP_DEFLATED)
+                fantasy_zip.close()
+                fileContent = ''
+                zip = zipfile.ZipFile('tmp.zip')
+                with open('tmp.zip', mode='rb') as file:
+                    fileContent = file.read()
+                #f = open('tmp2.zip', 'wb')
+                #f.write(fileContent)
+                # sock = get_client_sock()
+                # host = ''
+                data = pickle.dumps({
+                    server.LOCAL_REPO_KEY: python_data[server.LOCAL_REPO_KEY],
+                    server.OPERATION_KEY: server.DOWNLOAD,
+                    server.FILE_DICT_KEY: fileContent,
+                })
+                port = 8000
+                addr = (client_address[0], 8000)
+                UDPSock = socket(AF_INET, SOCK_DGRAM)
+                UDPSock.sendto(data, addr)
+                print ( client_address , addr )
+                print('fileContent = ' , fileContent)
+                os.remove('tmp.zip')
+    sock.close()
     os._exit(0)
 
 def SendRepository ( RootFolder , client_address ) :
@@ -237,13 +268,12 @@ def handle_apply():
         print("Applied changes successfully")
 
 
-def handle_upload(RemoteRepo , IPAddress , Port):
-    local_state_name = 's4'
+def handle_upload(RemoteRepo , IPAddress):
+    local_state_name = ''
     remote_state_name = ''
-    if len(sys.argv) != 5:
-        print("Syntax: tracker upload [repo name] [ip addr] [port]")
+    if len(sys.argv) != 4:
+        print("Syntax: tracker upload [repo name] [ip addr]")
         return
-    data_dict = file_tree_loader.compute_file_system_state_from_history(local_state_name)
     fantasy_zip = zipfile.ZipFile('tmp.zip', 'w')
     for folder, subfolders, files in os.walk(os.getcwd()):
         for file in files:
@@ -257,19 +287,56 @@ def handle_upload(RemoteRepo , IPAddress , Port):
     #f.write(fileContent)
     # sock = get_client_sock()
     # host = ''
-    port = int(Port)
+    data = pickle.dumps({
+        server.REMOTE_REPO_KEY: RemoteRepo,
+        server.OPERATION_KEY: server.UPLOAD,
+        server.FILE_DICT_KEY: fileContent,
+    })
+
+    
+    port = int(13000)
     addr = (IPAddress, port)
     UDPSock = socket(AF_INET, SOCK_DGRAM)
     print('fileContent = ' , fileContent)
-    UDPSock.sendto(fileContent, addr)
+    UDPSock.sendto(data, addr)
     os.remove('tmp.zip')
     # data = {'state_name' : remote_state_name, 'data_dict' : data_dict}
     # sock.sendto(pickle.dumps(data), addr)
 
 
 
-
-
+def handle_download(RemoteRepo , IPAddress):
+    if len(sys.argv) != 4:
+        print("Syntax: tracker download [repo name] [ip addr]")
+        return
+    data = pickle.dumps({
+        server.REMOTE_REPO_KEY: RemoteRepo,
+        server.LOCAL_REPO_KEY: os.path.basename(os.getcwd()),
+        server.OPERATION_KEY: server.DOWNLOAD,
+    })
+    port = int(13000)
+    addr = (IPAddress, port)
+    UDPSock = socket(AF_INET, SOCK_DGRAM)
+    UDPSock.sendto(data, addr)
+    print ( 'Download request sent' )
+    
+    buf = 99999
+    UDPSock2 = socket(AF_INET, SOCK_DGRAM)
+    addr2 = (IPAddress, 8000)
+    UDPSock2.bind(addr2)
+    (data, client_address) = UDPSock2.recvfrom(buf)
+    python_data = pickle.loads(data)
+    if python_data[server.LOCAL_REPO_KEY] == os.path.basename(os.getcwd()) :
+        if python_data[server.OPERATION_KEY] == server.DOWNLOAD:
+            f = open('tmp.zip', 'wb')
+            f.write(python_data[server.FILE_DICT_KEY])
+            f.close()
+            zip = zipfile.ZipFile('tmp.zip')
+            with zipfile.ZipFile('tmp.zip', 'r') as zip_ref:
+                zip_ref.extractall(os.getcwd())
+            os.remove('tmp.zip')
+            print ( 'Received' , len ( python_data[server.FILE_DICT_KEY] ) , ' bytes' )
+    
 
 def get_current_abs_path():
     return os.path.abspath('.')
@@ -330,7 +397,9 @@ def MainSwitch ( ) :
         elif sys.argv[1] == 'apply':
             handle_apply()
         elif sys.argv[1] == 'upload':
-            handle_upload(sys.argv[2], sys.argv[3], sys.argv[4])
+            handle_upload(sys.argv[2], sys.argv[3])
+        elif sys.argv[1] == 'download':
+            handle_download(sys.argv[2], sys.argv[3])
         else:
             printHelp()
     else:
