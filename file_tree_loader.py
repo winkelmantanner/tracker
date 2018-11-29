@@ -93,43 +93,6 @@ def save(new_state_name):
 
 
 
-def delete_files_in_dict(file_dict):
-    """
-    raises Exceptions
-    :param file_dict:
-    :return:
-    """
-    for file_path in file_dict:
-        if os.path.isfile(file_path):
-            # delete the file
-            os.remove(file_path)
-
-            # delete empty containing folders
-            if file_path[0] != '.':
-                raise Exception("prevented deleting non-relative path " + str(file_path))
-            iterating_path = file_path
-            count = 0
-            while iterating_path.find(os.sep) >= 0 and count < 5000:
-                iterating_path, file_name = os.path.split(iterating_path)
-                if os.listdir(iterating_path) == []:
-                    os.rmdir(iterating_path)
-            if count >= 5000:
-                raise Exception("Infinite loop broken when processing path " + str(file_path))
-
-def create_files_in_dict(file_dict):
-    for file_path in file_dict:
-        containing_folder_path, file_name = os.path.split(file_path)
-        my_makedirs(containing_folder_path)
-        with open(file_path, 'wb') as file:
-            file.write(diff.str_to_file_type(file_dict[file_path]))
-
-def my_makedirs(path):
-    if path.find(os.sep) < 0:
-        return
-    parent_path, child_name = os.path.split(path)
-    my_makedirs(parent_path)
-    if not os.path.exists(path):
-        os.mkdir(path)
 
 
 def main():

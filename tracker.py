@@ -153,10 +153,28 @@ def handle_move():
         # then, create all files in destination state
         current_state_name = get_current_state_name()
         dict_at_current_state = file_tree_loader.compute_file_system_state_from_history(current_state_name)
+        for file_path in dict_at_current_state:
+            if os.path.isfile(file_path):
+                # delete the file
+                os.remove(file_path)
 
-        file_tree_loader.delete_files_in_dict(dict_at_current_state)
+                # delete empty containing folders
+                if file_path[0] != '.':
+                    raise Exception("prevented deleting non-relative path " + str(file_path))
+                iterating_path = file_path
+                count = 0
+                while iterating_path.find(os.sep) >= 0 and count < 5000:
+                    iterating_path, file_name = os.path.split(iterating_path)
+                    if os.listdir(iterating_path) == []:
+                        os.rmdir(iterating_path)
+                if count >= 5000:
+                    raise Exception("Infinite loop broken when processing path " + str(file_path))
 
-        file_tree_loader.create_files_in_dict(dict_at_requested_state)
+        for file_path in dict_at_requested_state:
+            containing_folder_path, file_name = os.path.split(file_path)
+            my_makedirs(containing_folder_path)
+            with open(file_path, 'wb') as file:
+                file.write(diff.str_to_file_type(dict_at_requested_state[file_path]))
 
         set_current_state_name(requested_state_name)
 
@@ -165,50 +183,13 @@ def handle_move():
         traceback.print_exc()
         print("EXCEPTION:" + str(e))
 
-def handle_apply():
-    if len(sys.argv) != 7 or sys.argv[2] != 'changes' or sys.argv[3] != 'from' or sys.argv[5] != 'to':
-        print("Syntax: tracker apply changes from [state 1] to [state 2]")
-    else:
-        state_name_from = sys.argv[4]
-        state_name_to = sys.argv[6]
-        state_dict_from = {}
-        try:
-            state_dict_from = file_tree_loader.compute_file_system_state_from_history(state_name_from)
-        except IOError as ioe:
-            print("Could not load state " + state_name_from)
-        state_dict_to = {}
-        try:
-            state_dict_to = file_tree_loader.compute_file_system_state_from_history(state_name_to)
-        except IOError as ioe:
-            print("Could not load state " + state_name_to)
-
-        try:
-            current_context_diff = file_tree_loader.current_context_diff().strip()
-            if current_context_diff.strip() != '':
-                print("Failed to apply because there are unsaved changes.  You can see them with 'tracker show'."
-                      "  Use 'tracker save [saved state name]' to save them before applying changes.")
-                return
-        except Exception as e:
-            print("error while computing diff: " + str(e))
-            print("attempting apply anyway")
-
-        dmp_diff_dict = diff.compute_dmp_diff_dict(state_dict_from, state_dict_to)
-        current_state_name = get_current_state_name()
-        dict_at_current_state = file_tree_loader.compute_file_system_state_from_history(current_state_name)
-        patch_dict = diff.compute_dmp_patch_dict_from_dmp_diff_dict(dict_at_current_state, dmp_diff_dict)
-        result_dict = diff.apply_dmp_patch_dict(dict_at_current_state, patch_dict)
-
-        file_tree_loader.delete_files_in_dict(dict_at_current_state)
-        file_tree_loader.create_files_in_dict(result_dict)
-
-        print("Applied changes successfully")
-
-
-
-
-
-
-
+def my_makedirs(path):
+    if path.find(os.sep) < 0:
+        return
+    parent_path, child_name = os.path.split(path)
+    my_makedirs(parent_path)
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 
 def get_current_abs_path():
@@ -267,8 +248,6 @@ def MainSwitch ( ) :
             handle_save()
         elif sys.argv[1] == 'move':
             handle_move()
-        elif sys.argv[1] == 'apply':
-            handle_apply()
         else:
             printHelp()
     else:
