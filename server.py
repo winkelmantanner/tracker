@@ -9,9 +9,13 @@ from django.core.management import execute_from_command_line
 from django.views import View
 from django.http import HttpResponse
 
+LOCAL_REPO_KEY = 'local_name'
 REMOTE_REPO_KEY = 'remote_name'
 STATE_NAME_KEY = 'state_name'
 FILE_DICT_KEY = 'file_dict'
+OPERATION_KEY = 'operation'
+UPLOAD = 'upload'
+DOWNLOAD = 'download'
 
 
 class Index(View):
