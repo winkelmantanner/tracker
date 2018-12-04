@@ -9,11 +9,13 @@ import copy
 
 import multiprocessing
 
-DATA_SIZE = 12345678
+DATA_SIZE = 1234
 MAX_DATUM_VALUE = 12345
 MAX_NUM_THREADS = 10
 
-def func2(el):
+def heavyComputation(el):
+    for k in range(el):
+        x = 'asdf'
     return el ** 1.8
 
 if __name__ == "__main__":
@@ -23,12 +25,12 @@ if __name__ == "__main__":
         bigArr = copy.deepcopy(data)
         if num_threads == 0:
             startTime = time.time()
-            result = [func2(el) for el in bigArr]
+            result = [heavyComputation(el) for el in bigArr]
             duration = time.time() - startTime
             print("not_threaded" + " " + str(duration))
         else:
             with multiprocessing.Pool(num_threads) as p:
                 startTime = time.time()
-                result = p.map(func2, bigArr)
+                result = p.map(heavyComputation, bigArr)
                 duration = time.time() - startTime
                 print(str(num_threads) + " " + str(duration))
