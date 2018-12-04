@@ -1,3 +1,8 @@
+"""
+This file contains a test of the multiprocessing module, which uses subprocesses as a workaround to the GIL.
+"""
+
+
 import random
 import time
 import copy
