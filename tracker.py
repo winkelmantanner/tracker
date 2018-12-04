@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
-# Save as server.py 
-# Message Receiver
+
+"""
+  _______ _____            _____ _  ________ _____
+ |__   __|  __ \     /\   / ____| |/ /  ____|  __ \
+    | |  | |__) |   /  \ | |    | ' /| |__  | |__) |
+    | |  |  _  /   / /\ \| |    |  < |  __| |  _  /
+    | |  | | \ \  / ____ \ |____| . \| |____| | \ \
+    |_|  |_|  \_\/_/    \_\_____|_|\_\______|_|  \_\
+
+A simple version control tool.
+
+https://docs.google.com/document/d/1SUu2x6x-LrqnmmYJEgI1G2Ys-1FhmdwBmxoz39Atu8g/edit
+"""
+
 import os
 import sys
 import traceback
@@ -402,9 +414,13 @@ def get_current_state_name_or_none():
 
 def printHelp():
     print("Tracker - an easier to use program similar to git")
-    print('tracker CreateRepo [folder]')
+    print('tracker CreateRepo [folderpath]')
     print('tracker show')
-    print('tracker save [name]')
+    print('tracker save [statename]')
+    print('tracker move [statename]')
+    print('tracker Host')
+    print('tracker upload [remotereponame] [remoteip]')
+    print('tracker download [remotereponame] [remoteip]')
 
 def MainSwitch ( ) :
     if len ( sys.argv ) > 1 :
