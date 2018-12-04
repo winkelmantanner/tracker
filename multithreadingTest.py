@@ -19,10 +19,16 @@ def func2(el):
 if __name__ == "__main__":
     print("num_threads duration")
     data = [random.randint(0, MAX_DATUM_VALUE) for k in range(DATA_SIZE)]
-    for num_threads in range(1, MAX_NUM_THREADS + 1):
+    for num_threads in range(MAX_NUM_THREADS + 1):
         bigArr = copy.deepcopy(data)
-        with multiprocessing.Pool(num_threads) as p:
+        if num_threads == 0:
             startTime = time.time()
-            result = p.map(func2, bigArr)
+            result = [func2(el) for el in bigArr]
             duration = time.time() - startTime
-            print(str(num_threads) + " " + str(duration))
+            print("not_threaded" + " " + str(duration))
+        else:
+            with multiprocessing.Pool(num_threads) as p:
+                startTime = time.time()
+                result = p.map(func2, bigArr)
+                duration = time.time() - startTime
+                print(str(num_threads) + " " + str(duration))
