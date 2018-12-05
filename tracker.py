@@ -33,8 +33,6 @@ CURRENT_STATE_POINTER_NAME = 'currentState'
 INITIAL_STATE_NAME = "INITIAL"
 STATES_FOLDER_NAME = 'states'
 
-SERVER_URL = 'http://127.0.0.1:8000'
-
 def write_patch_data_for_state(state_name, previous_state_name, patch_dict):
     write_state(state_name, previous_state_name, patch_dict, get_states_folder_path())
 
@@ -307,10 +305,6 @@ def handle_upload(RemoteRepo , IPAddress):
     if len(sys.argv) != 4:
         print("Syntax: tracker upload [repo name] [ip addr]")
         return
-    parent_path, child_name = os.path.split(path)
-    my_makedirs(parent_path)
-    if not os.path.exists(path):
-        os.mkdir(path)
 
     fantasy_zip = zipfile.ZipFile('tmp.zip', 'w')
     for folder, subfolders, files in os.walk(os.getcwd()):
@@ -360,7 +354,7 @@ def handle_download(RemoteRepo , IPAddress):
 
     buf = 99999
     UDPSock2 = socket(AF_INET, SOCK_DGRAM)
-    addr2 = ('127.0.0.1', 8000)
+    addr2 = (IPAddress, 8000)
     UDPSock2.bind(addr2)
     (data, client_address) = UDPSock2.recvfrom(buf)
     python_data = pickle.loads(data)
