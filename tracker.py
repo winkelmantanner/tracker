@@ -145,7 +145,7 @@ def HostRepositories ( ) :
                 UDPSock = socket(AF_INET, SOCK_DGRAM)
                 UDPSock.sendto(data, addr)
                 print ( client_address , addr )
-                print('fileContent = ' , fileContent)
+                # print('fileContent = ' , fileContent)
                 os.remove('tmp.zip')
     sock.close()
     os._exit(0)
@@ -309,9 +309,10 @@ def handle_upload():
     port = int(13000)
     addr = (IPAddress, port)
     UDPSock = socket(AF_INET, SOCK_DGRAM)
-    print('fileContent = ' , fileContent)
+    # print('fileContent = ' , fileContent)
     UDPSock.sendto(data, addr)
     os.remove('tmp.zip')
+    print("The repository was sent successfully.  Whether or not it was received is not known on this end of the line.")
     # data = {'state_name' : remote_state_name, 'data_dict' : data_dict}
     # sock.sendto(pickle.dumps(data), addr)
 
