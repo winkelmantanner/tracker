@@ -279,12 +279,12 @@ def handle_apply():
 
 
 
-def handle_upload(RemoteRepo , IPAddress):
-    local_state_name = ''
-    remote_state_name = ''
+def handle_upload():
     if len(sys.argv) != 4:
         print("Syntax: tracker upload [repo name] [ip addr]")
         return
+    RemoteRepo = sys.argv[2]
+    IPAddress = sys.argv[3]
 
     fantasy_zip = zipfile.ZipFile('tmp.zip', 'w')
     for folder, subfolders, files in os.walk(os.getcwd()):
@@ -317,10 +317,11 @@ def handle_upload(RemoteRepo , IPAddress):
 
 
 
-def handle_download(RemoteRepo , IPAddress):
+def handle_download():
     if len(sys.argv) != 4:
         print("Syntax: tracker download [repo name] [ip addr]")
         return
+    RemoteRepo, IPAddress = sys.argv[2], sys.argv[3]
     data = pickle.dumps({
         server.REMOTE_REPO_KEY: RemoteRepo,
         server.LOCAL_REPO_KEY: os.path.basename(os.getcwd()),
@@ -413,9 +414,9 @@ def MainSwitch ( ) :
         elif sys.argv[1] == 'apply':
             handle_apply()
         elif sys.argv[1] == 'upload':
-            handle_upload(sys.argv[2], sys.argv[3])
+            handle_upload()
         elif sys.argv[1] == 'download':
-            handle_download(sys.argv[2], sys.argv[3])
+            handle_download()
         else:
             printHelp()
     else:
