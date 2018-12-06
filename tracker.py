@@ -193,11 +193,12 @@ def handle_save():
     if result != None and result != '':
         print("Failed to save because " + result)
     else:
-        print("Successful")
+        print("Successfully saved repository state as " + str(state_name))
+        print(str(state_name) + " is now the current state")
 
 def handle_move():
     if len(sys.argv) != 3:
-        print("Syntax: tracker move [name previously saved state]")
+        print("Syntax: tracker move [name of previously saved state]")
         return
     # do not move if there are unsaved changes
     current_context_diff = ''
@@ -205,7 +206,7 @@ def handle_move():
         current_context_diff = file_tree_loader.current_context_diff().strip()
         if current_context_diff.strip() != '':
             print("Failed to move because there are unsaved changes.  You can see them with 'tracker show'."
-                  "  Use 'tracker save [saved state name]' to save them before moving.")
+                  "  Use 'tracker save [name of new saved state]' to save them before moving.")
             return
     except Exception as e:
         print("error while computing diff: " + str(e))
